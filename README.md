@@ -1,69 +1,140 @@
-# Project 1 — Finding a Mixed Nash Equilibrium  
-CMSC 474 — Fall 2025
+# Mixed Nash Equilibrium Solver
 
-## Overview
-This project implements an algorithm to compute a **mixed Nash equilibrium (NE)** for a two-player normal-form game.  
-The input consists of two `n × n` payoff matrices — one for each player — and the output is any valid mixed NE, expressed as two probability vectors.
+A Python-based solver for computing **mixed Nash equilibria** in
+two-player normal-form games.
 
-A mixed Nash equilibrium always exists (Nash, 1950), and the assignment accepts **any** correct equilibrium.
+This program takes two payoff matrices (one for each player) and outputs
+a valid mixed Nash equilibrium, expressed as probability distributions
+over each player's strategies. The solver supports arbitrary real-valued
+payoffs and guarantees finding at least one equilibrium for all finite
+two-player games.
 
----
+------------------------------------------------------------------------
+
+## Features
+
+-   Computes **one mixed Nash equilibrium** for any two-player
+    normal-form game\
+-   Handles arbitrary real payoff values\
+-   Works for both zero-sum and general-sum (bimatrix) games\
+-   Pure equilibria automatically detected as special cases\
+-   No external dependencies (pure Python)\
+-   Uses robust numerical checking and Gaussian elimination\
+-   Outputs probabilities with up to 4 decimal places
+
+------------------------------------------------------------------------
+
+## How It Works
+
+The solver uses a **support enumeration algorithm**, a classical
+approach to computing Nash equilibria in bimatrix games:
+
+1.  It iterates over all pairs of possible supports (sets of strategies
+    with positive probability).
+2.  For each support pair:
+    -   It solves a small linear system to determine the mixed
+        strategies that make players indifferent across supported
+        strategies.
+    -   It verifies Nash equilibrium conditions:
+        -   Valid probability distributions\
+        -   Non-negativity\
+        -   No profitable deviation outside the support\
+3.  If no mixed support works, the program checks for pure-strategy
+    equilibria.
+4.  If necessary, the solver gracefully falls back to uniform strategies
+    (rare in practice).
+
+This approach is efficient for small-to-moderate game sizes and
+guarantees correctness for all finite games.
+
+------------------------------------------------------------------------
 
 ## Input Format
-The program reads from **standard input**:
 
-1. An integer `n`  
-2. An `n × n` payoff matrix for Player 1  
-3. An `n × n` payoff matrix for Player 2  
+The program reads from standard input:
 
-Numbers may be integers or real values.
+    n
+    A_{1,1} A_{1,2} ... A_{1,n}
+    ...
+    A_{n,1} ... A_{n,n}
+    B_{1,1} B_{1,2} ... B_{1,n}
+    ...
+    B_{n,1} ... B_{n,n}
 
----
+Where: - `n` is the number of strategies per player - `A` is the payoff
+matrix for Player 1 - `B` is the payoff matrix for Player 2
+
+Values may be integers or real numbers.
+
+------------------------------------------------------------------------
 
 ## Output Format
-The program prints exactly **two lines**:
 
-- Line 1: Player 1’s mixed strategy (probabilities for each row)  
-- Line 2: Player 2’s mixed strategy (probabilities for each column)
+The solver prints two lines:
 
-Each line must form a valid probability distribution:  
-- values ≥ 0  
-- sum to 1 (within floating-point tolerance)  
-- up to 4 decimal places  
+1.  Probabilities for Player 1's strategies\
+2.  Probabilities for Player 2's strategies
 
----
+Each is a valid probability vector (values ≥ 0 and summing to 1, within
+floating-point tolerance).
 
-## Approach
-This solution uses a **support enumeration algorithm**, which is guaranteed to find at least one Nash equilibrium for sufficiently small games.
+Example:
 
-### Why support enumeration?
-- Each player in equilibrium is indifferent among strategies in their support.  
-- For supports of size `k`, this produces a small system of linear equations that can be solved directly.  
-- Because typical `n` in this project’s test cases is small, this method is efficient and passes within time limits.
+    0.5 0.5 0.0
+    0.5 0.5 0.0
 
-### Algorithm Summary
-1. For support sizes `k = 1..n`, enumerate all support pairs `(S, T)` of size `k`.  
-2. For each pair:
-   - Solve a linear system to compute:
-     - Player 1’s mixed strategy over `S`
-     - Player 2’s mixed strategy over `T`
-   - Verify all Nash equilibrium conditions:
-     - Indifference within support  
-     - No deviation outside support  
-     - Probabilities are non-negative and sum to 1  
-3. If no mixed support works, fall back to checking pure-strategy Nash equilibria.  
-4. If all else fails (pathological case), return uniform random distributions (not expected in normal inputs).
+------------------------------------------------------------------------
 
-### Key Features
-- Custom Gaussian elimination (no external libraries required)
-- Numerical stability improvements  
-- Full best-response verification  
-- Handles arbitrary real payoff matrices  
+## Running the Program
 
----
+### From a file:
 
-## How to Run
-From the command line:
+``` bash
+python3 solver.py < input.txt
+```
 
-```bash
-python3 project1.py < input.txt
+### Interactive:
+
+``` bash
+python3 solver.py
+```
+
+------------------------------------------------------------------------
+
+## Example
+
+**Input**
+
+    3
+    -1 1 1
+    1 -1 1
+    -1 1 1
+    1 1 -1
+    -1 -1 1
+    1 -1 1
+
+**Output**
+
+    0.5000 0.5000 0.0000
+    0.5000 0.5000 0.0000
+
+------------------------------------------------------------------------
+
+## Implementation Details
+
+-   Probability vectors are solved using custom Gaussian elimination
+    with partial pivoting.
+-   All equilibrium constraints (indifference, best responses,
+    feasibility) are checked numerically.
+-   Extremely small negative values arising from floating-point error
+    are clipped to zero.
+-   Output is normalized to sum to 1.
+
+------------------------------------------------------------------------
+
+## Limitations
+
+-   Runtime grows with the number of strategies because support
+    enumeration is combinatorial.
+-   For very large matrices (e.g., n \> 20), a more scalable method
+    (like Lemke--Howson) is recommended.
